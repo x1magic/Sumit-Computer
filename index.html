@@ -1,72 +1,332 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Hand Gesture AI</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SUMIT COMPUTER'S - Maheshwar Digital Card</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Caveat:wght@400;700&display=swap');
+        
+        :root {
+            --bg-white: #FFFFFF;
+            --text-dark: #1A1A1A;
+            --bright-blue: #3B82F6;
+            --bright-pink: #EC4899;
+            --soft-blue: rgba(59, 130, 246, 0.1);
+            --soft-pink: rgba(236, 72, 153, 0.1);
+        }
 
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+        * { -webkit-tap-highlight-color: transparent; }
 
-<style>
-  body {
-    margin: 0;
-    background: #000;
-    color: #0f0;
-    font-family: system-ui, sans-serif;
-    text-align: center;
-  }
-  h2 { margin: 10px 0; }
-  video {
-    width: 95%;
-    max-width: 420px;
-    border-radius: 14px;
-    margin-top: 10px;
-  }
-  #status {
-    margin-top: 12px;
-    font-size: 18px;
-  }
-</style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-white);
+            margin: 0; padding: 0;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            color: var(--text-dark);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 100dvh;
+        }
+
+        .mesh-bg {
+            position: fixed; inset: 0; z-index: -1;
+            background: radial-gradient(at 0% 0%, var(--soft-blue) 0px, transparent 50%),
+                        radial-gradient(at 100% 100%, var(--soft-pink) 0px, transparent 50%);
+        }
+
+        .paper-grain {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+        }
+
+        #snow-container {
+            position: fixed; inset: 0; pointer-events: none; z-index: 50; overflow: hidden;
+        }
+
+        @keyframes snowfall-animation {
+            0% { transform: translateY(-10vh) translateX(0) rotate(0deg); }
+            100% { transform: translateY(110vh) translateX(var(--sway)) rotate(var(--rot)); }
+        }
+
+        .snowflake {
+            position: absolute; top: -10vh; color: var(--bright-blue); user-select: none;
+            animation: snowfall-animation linear infinite; font-family: serif;
+            opacity: 0; pointer-events: none; transition: opacity 1s ease-in;
+        }
+
+        .card-container {
+            perspective: 1000px;
+        }
+
+        .card-inner {
+            transition: transform 0.1s ease-out, box-shadow 0.3s ease;
+            transform-style: preserve-3d;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid rgba(59, 130, 246, 0.1);
+        }
+        
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; overflow: visible !important; }
+            .card-container { margin: 0 !important; transform: none !important; width: 100% !important; }
+            #snow-container { display: none !important; }
+            .card-inner { border-radius: 0 !important; box-shadow: none !important; border: 1px solid #ccc !important; transform: none !important; }
+        }
+
+        /* Stylish QR Scan Me Design */
+        .qr-wrapper {
+            position: relative;
+            padding: 40px;
+            display: inline-block;
+        }
+
+        .qr-frame {
+            position: relative;
+            padding: 12px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .qr-frame::before, .qr-frame::after, 
+        .qr-frame-inner::before, .qr-frame-inner::after {
+            content: '';
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            border-color: var(--bright-blue);
+            border-style: solid;
+        }
+
+        .qr-frame::before { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 8px 0 0 0; }
+        .qr-frame::after { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 8px 0 0; }
+        .qr-frame-inner::before { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 8px; }
+        .qr-frame-inner::after { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 8px 0; }
+
+        .scan-me-text {
+            font-family: 'Caveat', cursive;
+            font-size: 48px;
+            color: var(--bright-pink);
+            margin-top: 10px;
+            line-height: 1;
+        }
+
+        .qr-arrow {
+            position: absolute;
+            right: -60px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 80px;
+            opacity: 0.85;
+            pointer-events: none;
+        }
+        
+        @media (max-width: 640px) {
+            .qr-arrow { right: -40px; width: 60px; }
+            .scan-me-text { font-size: 38px; }
+        }
+
+        .winter-badge {
+            background: linear-gradient(135deg, var(--bright-blue) 0%, var(--bright-pink) 100%);
+            color: white; border: none;
+        }
+
+        .icon-accent {
+            color: var(--bright-blue);
+        }
+
+        .service-item:hover .icon-accent {
+            color: var(--bright-pink);
+            transform: scale(1.1);
+        }
+    </style>
 </head>
+<body class="p-4 sm:p-12 opacity-0 transition-opacity duration-700">
+    <div class="mesh-bg"></div>
+    <div id="snow-container"></div>
 
-<body>
-  <h2>✋ Hand Gesture AI</h2>
-  <video id="video" autoplay playsinline></video>
-  <div id="status">Camera starting…</div>
+    <div class="w-full max-w-[460px] relative z-10 flex flex-col items-center justify-center space-y-10">
+        
+        <div class="no-print">
+            <div class="winter-badge inline-flex items-center gap-3 px-6 py-2.5 rounded-full shadow-lg animate-pulse">
+                <i class="fa-solid fa-snowflake"></i>
+                <span class="text-[10px] font-extrabold uppercase tracking-[0.4em]">Winter Collection</span>
+            </div>
+        </div>
 
-<script>
-const video = document.getElementById("video");
-const statusText = document.getElementById("status");
+        <!-- The Visiting Card -->
+        <div class="card-container relative w-full aspect-[1.58/1] group select-none">
+            <div class="card-inner relative h-full w-full shadow-[0_20px_50px_rgba(59,130,246,0.1)] overflow-hidden border border-blue-50">
+                <div class="absolute inset-0 z-0 paper-grain"></div>
+                
+                <!-- Background Graphic -->
+                <div class="absolute -right-20 -top-20 w-[300px] h-[300px] opacity-[0.05] pointer-events-none z-10">
+                    <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full rotate-45">
+                        <circle cx="100" cy="100" r="80" stroke="#3B82F6" stroke-width="0.5" />
+                        <path d="M100 20 L100 180 M20 100 L180 100" stroke="#EC4899" stroke-width="0.5" />
+                    </svg>
+                </div>
 
-const hands = new Hands({
-  locateFile: (file) =>
-    `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-});
+                <div class="relative h-full flex flex-col p-8 sm:p-10 z-20">
+                    <!-- Branding -->
+                    <div class="flex justify-between items-start">
+                        <div class="space-y-1">
+                            <h1 class="text-3xl sm:text-4xl font-serif font-light tracking-[0.02em] text-dark uppercase leading-none">
+                                SUMIT <span class="font-bold text-blue-600">COMPUTER'S</span>
+                            </h1>
+                            <div class="flex items-center gap-3 pt-2">
+                                <div class="h-[1px] w-8 bg-pink-500"></div>
+                                <p class="text-[10px] font-black text-dark uppercase tracking-[0.3em]">
+                                    Stationery & PHOTO COPY
+                                </p>
+                            </div>
+                        </div>
+                    </div>
 
-hands.setOptions({
-  maxNumHands: 1,
-  minDetectionConfidence: 0.7,
-  minTrackingConfidence: 0.7
-});
+                    <!-- Services Grid -->
+                    <div class="mt-8 grid grid-cols-2 gap-x-8 gap-y-2.5 text-[10px] sm:text-[11px] text-dark font-bold uppercase tracking-widest opacity-90">
+                        <div class="service-item flex items-center gap-3 transition-all"><i class="fa-solid fa-print icon-accent"></i><span>Print & Scan</span></div>
+                        <div class="service-item flex items-center gap-3 transition-all"><i class="fa-solid fa-copy icon-accent"></i><span>Photocopy</span></div>
+                        <div class="service-item flex items-center gap-3 transition-all"><i class="fa-solid fa-id-card icon-accent"></i><span>Resume / Bio-Data</span></div>
+                        <div class="service-item flex items-center gap-3 transition-all"><i class="fa-solid fa-address-card icon-accent"></i><span>Visiting Card</span></div>
+                        <div class="service-item flex items-center gap-3 transition-all"><i class="fa-solid fa-image icon-accent"></i><span>Art Card</span></div>
+                        <div class="service-item flex items-center gap-3 transition-all"><i class="fa-solid fa-keyboard icon-accent"></i><span>Typing (Hi/En)</span></div>
+                    </div>
 
-hands.onResults(results => {
-  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-    statusText.innerText = "✅ Hand Detected";
-  } else {
-    statusText.innerText = "❌ No Hand";
-  }
-});
+                    <!-- Contact & Location -->
+                    <div class="mt-auto flex items-end justify-between border-t border-blue-100 pt-6">
+                        <div class="flex flex-col gap-1">
+                            <div class="flex items-center gap-6 text-dark">
+                                <a href="tel:+919575903860" class="hover:text-blue-600 transition-transform hover:-translate-y-1"><i class="fa-solid fa-phone text-sm"></i></a>
+                                <a href="#" class="hover:text-blue-500 transition-transform hover:-translate-y-1"><i class="fa-brands fa-whatsapp text-lg"></i></a>
+                                <a href="#" class="hover:text-pink-500 transition-transform hover:-translate-y-1"><i class="fa-brands fa-instagram text-lg"></i></a>
+                                <a href="#" class="hover:text-red-500 transition-transform hover:-translate-y-1"><i class="fa-solid fa-location-dot text-sm"></i></a>
+                            </div>
+                            <div class="flex flex-col text-[9px] font-bold text-dark/60 mt-2 tracking-wider">
+                                <span>95759-03860</span>
+                                <span>93028-20988</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[11px] font-black text-blue-600 tracking-[0.2em] uppercase">Maheshwar, MP</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-400 to-pink-400"></div>
+            </div>
+        </div>
 
-const camera = new Camera(video, {
-  onFrame: async () => {
-    await hands.send({ image: video });
-  },
-  width: 640,
-  height: 480
-});
+        <!-- Action Buttons -->
+        <div class="no-print flex justify-center gap-12 pt-4">
+            <button onclick="window.print()" class="flex flex-col items-center gap-2 group w-20">
+                <div class="w-14 h-14 border border-blue-100 flex items-center justify-center bg-white text-blue-600 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all rounded-full shadow-sm">
+                    <i class="fa-solid fa-print text-lg"></i>
+                </div>
+                <span class="text-[9px] font-black uppercase tracking-widest text-dark">Print</span>
+            </button>
 
-camera.start();
-</script>
+            <button onclick="handleShare()" class="flex flex-col items-center gap-2 group w-20">
+                <div class="w-14 h-14 border border-blue-100 flex items-center justify-center bg-white text-blue-600 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all rounded-full shadow-sm">
+                    <i class="fa-solid fa-share-nodes text-lg"></i>
+                </div>
+                <span class="text-[9px] font-black uppercase tracking-widest text-dark">Share</span>
+            </button>
+        </div>
+
+        <!-- Footer Section with Custom QR Design -->
+        <div class="footer-section text-center pb-24 no-print">
+            <div class="qr-wrapper">
+                <!-- Arrow SVG pointing at QR -->
+                <svg class="qr-arrow" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 80C25 85 50 80 65 60C70 50 68 40 60 30M60 30L55 40M60 30L70 35" stroke="#3B82F6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+
+                <div class="qr-frame">
+                    <div class="qr-frame-inner">
+                        <div class="block p-4 bg-white hover:scale-105 transition-transform duration-500">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://wa.me/919575903860&color=3b82f6" 
+                                 alt="Digital Card QR" 
+                                 class="w-32 h-32 sm:w-40 sm:h-40">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="scan-me-text">Scan me</div>
+            </div>
+
+            <div class="mt-8 space-y-3">
+                <p class="text-[16px] font-serif font-bold italic text-dark opacity-80">Quality you can trust.</p>
+                <div class="h-[1px] w-12 bg-pink-400 mx-auto opacity-40"></div>
+                <p class="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em]">SUMIT COMPUTER'S &copy; 2024</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 3D Tilt Effect
+        const card = document.querySelector('.card-inner');
+        const container = document.querySelector('.card-container');
+
+        container.addEventListener('mousemove', (e) => {
+            const rect = container.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            const rotateX = (y - centerY) / 20;
+            const rotateY = (centerX - x) / 20;
+
+            card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            card.style.boxShadow = `${-rotateY * 2}px ${rotateX * 2}px 40px rgba(59, 130, 246, 0.15)`;
+        });
+
+        container.addEventListener('mouseleave', () => {
+            card.style.transform = `rotateX(0deg) rotateY(0deg)`;
+            card.style.boxShadow = `0 20px 50px rgba(59, 130, 246, 0.1)`;
+        });
+
+        function initSnowfall() {
+            const container = document.getElementById('snow-container');
+            const symbols = ['❄', '•', '✧'];
+            for (let i = 0; i < 35; i++) {
+                setTimeout(() => {
+                    const flake = document.createElement('div');
+                    flake.className = 'snowflake';
+                    flake.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+                    flake.style.left = `${Math.random() * 100}%`;
+                    flake.style.fontSize = `${10 + Math.random() * 12}px`;
+                    flake.style.animationDuration = `${12 + Math.random() * 15}s`;
+                    flake.style.setProperty('--sway', `${(Math.random()-0.5)*120}px`);
+                    flake.style.setProperty('--rot', `${(Math.random()-0.5)*1080}deg`);
+                    container.appendChild(flake);
+                    requestAnimationFrame(() => flake.style.opacity = '0.6');
+                }, i * 250);
+            }
+        }
+
+        async function handleShare() {
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: "SUMIT COMPUTER'S",
+                        text: "Digital Card of SUMIT COMPUTER'S Stationery & PHOTO COPY - Maheshwar, MP.",
+                        url: window.location.href
+                    });
+                } catch (err) {}
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initSnowfall();
+            setTimeout(() => document.body.classList.add('opacity-100'), 50);
+        });
+    </script>
 </body>
 </html>
