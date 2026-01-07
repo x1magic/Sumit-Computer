@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hand Gesture AI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+<style>
+  body {
+    margin: 0;
+    background: #000;
+    color: #0f0;
+    font-family: system-ui, sans-serif;
+    text-align: center;
+  }
+  h2 { margin: 10px 0; }
+  video {
+    width: 95%;
+    max-width: 420px;
+    border-radius: 14px;
+    margin-top: 10px;
+  }
+  #status {
+    margin-top: 12px;
+    font-size: 18px;
+  }
+</style>
+</head>
+
+<body>
+  <h2>✋ Hand Gesture AI</h2>
+  <video id="video" autoplay playsinline></video>
+  <div id="status">Camera starting…</div>
+
+<script>
+const video = document.getElementById("video");
+const statusText = document.getElementById("status");
+
+const hands = new Hands({
+  locateFile: (file) =>
+    `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+});
+
+hands.setOptions({
+  maxNumHands: 1,
+  minDetectionConfidence: 0.7,
+  minTrackingConfidence: 0.7
+});
+
+hands.onResults(results => {
+  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+    statusText.innerText = "✅ Hand Detected";
+  } else {
+    statusText.innerText = "❌ No Hand";
+  }
+});
+
+const camera = new Camera(video, {
+  onFrame: async () => {
+    await hands.send({ image: video });
+  },
+  width: 640,
+  height: 480
+});
+
+camera.start();
+</script>
+</body>
+</html>
